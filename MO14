@@ -1,0 +1,397 @@
+import matplotlib.pyplot as plt
+import numpy as np
+from IPython.display import display, clear_output
+import time
+
+class QuickSortVisualizer:
+    def __init__(self, arr):
+        self.arr = arr.copy()
+        self.history = []  # To store array states at each step
+        self.partition_history = []  # To store partition information
+        self.sort(0, len(arr) - 1)
+    
+    def partition(self, low, high):
+        """Partition the array and return pivot index"""
+        pivot = self.arr[high]  # Choosing last element as pivot
+        i = low - 1  # Index of smaller element
+        
+        # Record initial state before partitioning
+        self.history.append(self.arr.copy())
+        self.partition_history.append({
+            'type': 'partition_start',
+            'low': low,
+            'high': high,
+            'pivot': pivot,
+            'pivot_index': high
+        })
+        
+        for j in range(low, high):
+            if self.arr[j] <= pivot:
+                i += 1
+                # Swap elements
+                self.arr[i], self.arr[j] = self.arr[j], self.arr[i]
+                
+                # Record swap
+                if i != j:
+                    self.history.append(self.arr.copy())
+                    self.partition_history.append({
+                        'type': 'swap',
+                        'i': i,
+                        'j': j,
+                        'pivot': pivot
+                    })
+        
+        # Place pivot in correct position
+        self.arr[i + 1], self.arr[high] = self.arr[high], self.arr[i + 1]
+        
+        # Record final pivot placement
+        self.history.append(self.arr.copy())
+        self.partition_history.append({
+            'type': 'pivot_placed',
+            'pivot_index': i + 1,
+            'pivot': pivot,
+            'low': low,
+            'high': high
+        })
+        return i + 1
+    
+    def sort(self, low, high):
+        """Recursive QuickSort function"""
+        if low < high:
+            # pi is partitioning index
+            pi = self.partition(low, high)
+            
+            # Record recursive calls
+            self.history.append(self.arr.copy())
+            self.partition_history.append({
+                'type': 'recursive_call',
+                'left': (low, pi - 1),
+                'right': (pi + 1, high)
+            })
+            
+            # Recursively sort elements before and after partition
+            self.sort(low, pi - 1)
+            self.sort(pi + 1, high)
+    
+    def visualize_all_steps(self, figsize=(15, 10)):
+        """Visualize all steps in a single figure"""
+        n_steps = len(self.history)
+        n_cols = 4  # Number of columns in the grid
+        n_rows = (n_steps + n_cols - 1) // n_cols  # Calculate rows needed
+        
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=figsize)
+        axes = axes.flatten()  # Flatten in case of 2D array
+        
+        for idx in range(len(axes)):
+            if idx < n_steps:
+                ax = axes[idx]
+                arr_state = self.history[idx]
+                partition_info = self.partition_history[idx] if idx < len(self.partition_history) else {}
+                
+                # Create bars
+                bars = ax.bar(range(len(arr_state)), arr_state, 
+                             color=['lightblue'] * len(arr_state))
+                
+                # Highlight based on partition info
+                if partition_info.get('type') == 'partition_start':
+                    # Highlight pivot and partition range
+                    pivot_idx = partition_info['pivot_index']
+                    low, high = partition_info['low'], partition_info['high']
+                    
+                    # Color the pivot
+                    if pivot_idx < len(bars):
+                        bars[pivot_idx].set_color('red')
+                    
+                    # Color the range being partitioned
+                    for i in range(low, high + 1):
+                        if i < len(bars) and i != pivot_idx:
+                            bars[i].set_color('lightgreen')
+                
+                elif partition_info.get('type') == 'swap':
+                    # Highlight swapped elements
+                    i, j = partition_info['i'], partition_info['j']
+                    if i < len(bars):
+                        bars[i].set_color('orange')
+                    if j < len(bars):
+                        bars[j].set_color('orange')
+                
+                elif partition_info.get('type') == 'pivot_placed':
+                    # Highlight final pivot position
+                    pivot_idx = partition_info['pivot_index']
+                    if pivot_idx < len(bars):
+                        bars[pivot_idx].set_color('purple')
+                
+                elif partition_info.get('type') == 'recursive_call':
+                    # Show recursive calls with different colors
+                    left_range = partition_info['left']
+                    right_range = partition_info['right']
+                    
+                    # Color left subarray
+                    if left_range[0] <= left_range[1]:
+                        for i in range(left_range[0], left_range[1] + 1):
+                            if i < len(bars):
+                                bars[i].set_color('lightcoral')
+                    
+                    # Color right subarray
+                    if right_range[0] <= right_range[1]:
+                        for i in range(right_range[0], right_range[1] + 1):
+                            if i < len(bars):
+                                bars[i].set_color('lightyellow')
+                
+                ax.set_title(f'Step {idx + 1}', fontsize=10)
+                ax.set_xlabel('Index')
+                ax.set_ylabel('Value')
+                ax.set_ylim(0, max(self.history[0]) * 1.1)
+                
+                # Add text annotation for partition info
+                if partition_info.get('type'):
+                    info_text = partition_info['type'].replace('_', ' ').title()
+                    ax.text(0.05, 0.95, info_text, transform=ax.transAxes, 
+                           fontsize=8, verticalalignment='top',
+                           bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+            else:
+                # Hide unused subplots
+                axes[idx].axis('off')
+        
+        plt.suptitle('QuickSort Step-by-Step Visualization', fontsize=16, fontweight='bold')
+        plt.tight_layout()
+        plt.show()
+    
+    def visualize_partitioning(self):
+        """Visualize just the partitioning steps in detail"""
+        # Filter only partition-related steps
+        partition_steps = []
+        partition_info_list = []
+        
+        for i, info in enumerate(self.partition_history):
+            if info['type'] in ['partition_start', 'swap', 'pivot_placed']:
+                partition_steps.append(self.history[i])
+                partition_info_list.append(info)
+        
+        if not partition_steps:
+            print("No partitioning steps to visualize")
+            return
+        
+        n_steps = len(partition_steps)
+        n_cols = min(3, n_steps)
+        n_rows = (n_steps + n_cols - 1) // n_cols
+        
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 4 * n_rows))
+        if n_rows == 1 and n_cols == 1:
+            axes = [axes]
+        else:
+            axes = axes.flatten()
+        
+        for idx in range(len(axes)):
+            if idx < n_steps:
+                ax = axes[idx]
+                arr_state = partition_steps[idx]
+                info = partition_info_list[idx]
+                
+                bars = ax.bar(range(len(arr_state)), arr_state, 
+                             color=['lightblue'] * len(arr_state))
+                
+                # Color based on partition step type
+                if info['type'] == 'partition_start':
+                    title = f"Partition Start\nPivot: {info['pivot']}"
+                    if info['pivot_index'] < len(bars):
+                        bars[info['pivot_index']].set_color('red')
+                
+                elif info['type'] == 'swap':
+                    title = f"Swap Elements\nIndices: {info['i']} & {info['j']}"
+                    if info['i'] < len(bars):
+                        bars[info['i']].set_color('orange')
+                    if info['j'] < len(bars):
+                        bars[info['j']].set_color('orange')
+                
+                elif info['type'] == 'pivot_placed':
+                    title = f"Pivot Placed\nIndex: {info['pivot_index']}"
+                    if info['pivot_index'] < len(bars):
+                        bars[info['pivot_index']].set_color('purple')
+                
+                ax.set_title(title, fontsize=12)
+                ax.set_xlabel('Index')
+                ax.set_ylabel('Value')
+                ax.set_ylim(0, max(self.history[0]) * 1.1)
+            else:
+                axes[idx].axis('off')
+        
+        plt.suptitle('QuickSort Partitioning Steps', fontsize=16, fontweight='bold')
+        plt.tight_layout()
+        plt.show()
+
+
+def get_user_array():
+    """Get array input from user with multiple options"""
+    print("\n" + "=" * 60)
+    print("QUICKSORT VISUALIZATION - INPUT OPTIONS")
+    print("=" * 60)
+    print("\nChoose input method:")
+    print("1. Enter custom array")
+    print("2. Use predefined examples")
+    print("3. Generate random array")
+    
+    choice = input("\nEnter choice (1, 2, or 3): ").strip()
+    
+    if choice == '1':
+        # Option 1: Custom input
+        print("\n" + "-" * 40)
+        print("CUSTOM ARRAY INPUT")
+        print("-" * 40)
+        print("Enter numbers separated by spaces (e.g., '64 34 25 12 22 11 90')")
+        print("You can use integers or floats (e.g., '3.5 1.2 4.8 2.1')")
+        
+        while True:
+            input_str = input("\nYour array: ").strip()
+            if not input_str:
+                print("Please enter some numbers!")
+                continue
+            
+            try:
+                # Try to convert to floats first (handles both ints and floats)
+                numbers = [float(x) if '.' in x else int(x) for x in input_str.split()]
+                if len(numbers) < 2:
+                    print("Please enter at least 2 numbers!")
+                    continue
+                return numbers
+            except ValueError:
+                print("Invalid input! Please enter numbers only (e.g., '5 2 9 1 6')")
+    
+    elif choice == '2':
+        # Option 2: Predefined examples
+        print("\n" + "-" * 40)
+        print("PREDEFINED EXAMPLES")
+        print("-" * 40)
+        examples = {
+            '1': ([64, 34, 25, 12, 22, 11, 90], "Standard case (7 elements)"),
+            '2': ([1, 2, 3, 4, 5, 6, 7, 8], "Already sorted (worst case)"),
+            '3': ([8, 7, 6, 5, 4, 3, 2, 1], "Reverse sorted"),
+            '4': ([5, 2, 9, 1, 5, 6, 5, 3], "With duplicates"),
+            '5': ([7, 7, 7, 7, 7, 7], "All same values"),
+            '6': ([-5, 10, -3, 7, 0, -1, 4], "Mixed positive/negative"),
+            '7': ([29, 14, 33, 7, 42, 18, 25, 11, 36, 9], "Larger array (10 elements)")
+        }
+        
+        print("\nChoose an example:")
+        for key, (arr, desc) in examples.items():
+            print(f"{key}. {arr} - {desc}")
+        
+        while True:
+            ex_choice = input("\nEnter example number (1-7): ").strip()
+            if ex_choice in examples:
+                return examples[ex_choice][0]
+            else:
+                print("Invalid choice! Please enter 1-7")
+    
+    elif choice == '3':
+        # Option 3: Random generation
+        print("\n" + "-" * 40)
+        print("RANDOM ARRAY GENERATION")
+        print("-" * 40)
+        
+        try:
+            size = int(input("Enter array size (recommended: 8-15): "))
+            if size < 2:
+                print("Size must be at least 2. Using default size 10.")
+                size = 10
+            
+            min_val = int(input("Enter minimum value (default 1): ") or "1")
+            max_val = int(input("Enter maximum value (default 100): ") or "100")
+            
+            if max_val <= min_val:
+                print("Maximum must be greater than minimum. Using 1 and 100.")
+                min_val, max_val = 1, 100
+            
+            seed = input("Enter random seed (or press Enter for random): ")
+            if seed.strip():
+                np.random.seed(int(seed))
+            
+            random_array = np.random.randint(min_val, max_val + 1, size)
+            print(f"\nGenerated array: {list(random_array)}")
+            return list(random_array)
+        
+        except ValueError:
+            print("Invalid input! Using default random array.")
+            np.random.seed(42)
+            return list(np.random.randint(1, 50, 12))
+    
+    else:
+        print("Invalid choice! Using default example.")
+        return [64, 34, 25, 12, 22, 11, 90]
+
+
+if __name__ == "__main__":
+    # Get array from user
+    sample_array = get_user_array()
+    
+    print("\n" + "=" * 60)
+    print("QUICKSORT VISUALIZATION STARTING")
+    print("=" * 60)
+    print(f"\nOriginal array: {sample_array}")
+    print(f"Array length: {len(sample_array)}")
+    print(f"Array type: {type(sample_array[0]).__name__}")
+    
+    # Create visualizer
+    print("\nSorting array using QuickSort...")
+    try:
+        visualizer = QuickSortVisualizer(sample_array)
+        
+        print(f"\nTotal steps recorded: {len(visualizer.history)}")
+        print(f"Sorted array: {list(visualizer.arr)}")
+        
+        # Verify sorting
+        is_sorted = all(visualizer.arr[i] <= visualizer.arr[i+1] for i in range(len(visualizer.arr)-1))
+        print(f"✓ Array is correctly sorted: {is_sorted}")
+        
+        # Visualize all steps
+        print("\n" + "=" * 60)
+        print("VISUALIZING ALL STEPS")
+        print("=" * 60)
+        visualizer.visualize_all_steps()
+        
+        # Visualize partitioning steps separately
+        print("\n" + "=" * 60)
+        print("VISUALIZING PARTITIONING STEPS")
+        print("=" * 60)
+        visualizer.visualize_partitioning()
+        
+        print("\n" + "=" * 60)
+        print("COLOR LEGEND")
+        print("=" * 60)
+        print("• Light Blue: Unsorted elements")
+        print("• Red: Pivot element (initial position)")
+        print("• Green: Elements in current partition range")
+        print("• Orange: Elements being swapped")
+        print("• Purple: Pivot in final position")
+        print("• Coral: Left subarray for recursion")
+        print("• Yellow: Right subarray for recursion")
+        
+        # Save option
+        save_choice = input("\nWould you like to save the sorted array to a file? (y/n): ").lower()
+        if save_choice == 'y':
+            filename = input("Enter filename (default: sorted_array.txt): ") or "sorted_array.txt"
+            with open(filename, 'w') as f:
+                f.write(f"Original array: {sample_array}\n")
+                f.write(f"Sorted array: {list(visualizer.arr)}\n")
+                f.write(f"Steps: {len(visualizer.history)}\n")
+            print(f"✓ Saved to {filename}")
+        
+        # Try again option
+        try_again = input("\nWould you like to try another array? (y/n): ").lower()
+        if try_again == 'y':
+            print("\n" + "="*60)
+            print("STARTING NEW VISUALIZATION")
+            print("="*60)
+            # Close any existing plots
+            plt.close('all')
+            # Recursive call would be bad practice, so we'll just exit
+            print("\nPlease run the program again to try another array!")
+    
+    except Exception as e:
+        print(f"\n✗ Error during sorting: {e}")
+        print("Please check your input and try again.")
+    
+    print("\n" + "=" * 60)
+    print("PROGRAM COMPLETE")
+    print("=" * 60)
+    print("\nThank you for using QuickSort Visualizer!")
