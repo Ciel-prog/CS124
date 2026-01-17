@@ -1,0 +1,152 @@
+import matplotlib.pyplot as plt
+import numpy as np
+
+def bubble_sort(subjects, hours):
+    """
+    Sort subjects by study hours using bubble sort algorithm
+    Returns sorted subjects and hours
+    """
+    n = len(hours)
+    sorting_steps = []
+    
+
+    sorted_subjects = subjects.copy()
+    sorted_hours = hours.copy()
+    
+
+    sorting_steps.append((sorted_subjects.copy(), sorted_hours.copy(), "Initial"))
+    
+    for i in range(n):
+        for j in range(0, n - i - 1):
+            if sorted_hours[j] < sorted_hours[j + 1]:  
+              
+                sorted_hours[j], sorted_hours[j + 1] = sorted_hours[j + 1], sorted_hours[j]
+               
+                sorted_subjects[j], sorted_subjects[j + 1] = sorted_subjects[j + 1], sorted_subjects[j]
+        
+                sorting_steps.append((sorted_subjects.copy(), sorted_hours.copy(), f"Swap {j} and {j+1}"))
+    
+   
+    sorting_steps.append((sorted_subjects.copy(), sorted_hours.copy(), "Sorted"))
+    
+    return sorted_subjects, sorted_hours, sorting_steps
+
+def visualize_sorting(steps):
+    """Visualize the bubble sort process step by step"""
+    num_steps = len(steps)
+    fig, axes = plt.subplots(2, 3, figsize=(15, 8))
+    axes = axes.flatten()
+    
+    steps_to_show = [0, 1, num_steps//4, num_steps//2, num_steps-2, num_steps-1]
+    
+    for idx, (step_idx, ax) in enumerate(zip(steps_to_show, axes)):
+        subjects, hours, title = steps[step_idx]
+        
+        colors = plt.cm.viridis(np.linspace(0.2, 0.8, len(hours)))
+        bars = ax.bar(subjects, hours, color=colors)
+        ax.set_title(f"Step {step_idx+1}: {title}")
+        ax.set_xlabel("Subjects")
+        ax.set_ylabel("Study Hours")
+        ax.tick_params(axis='x', rotation=45)
+        
+   
+        for bar in bars:
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width()/2., height + 0.1,
+                   f'{int(height)}h', ha='center', va='bottom')
+    
+    plt.suptitle("Bubble Sort Process: Organizing Study Hours", fontsize=16, fontweight='bold')
+    plt.tight_layout()
+    plt.show()
+
+def visualize_comparison(original_subjects, original_hours, sorted_subjects, sorted_hours):
+    """Visualize before and after sorting comparison"""
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+    
+
+    colors1 = plt.cm.cool(np.linspace(0.2, 0.8, len(original_hours)))
+    bars1 = ax1.bar(original_subjects, original_hours, color=colors1)
+    ax1.set_title("Before Sorting (Random Order)", fontsize=14, fontweight='bold')
+    ax1.set_xlabel("Subjects")
+    ax1.set_ylabel("Weekly Study Hours")
+    ax1.tick_params(axis='x', rotation=45)
+    ax1.set_ylim(0, max(original_hours) + 2)
+    
+
+    for bar in bars1:
+        height = bar.get_height()
+        ax1.text(bar.get_x() + bar.get_width()/2., height + 0.1,
+                f'{int(height)}h', ha='center', va='bottom')
+    
+
+    colors2 = plt.cm.winter(np.linspace(0.2, 0.8, len(sorted_hours)))
+    bars2 = ax2.bar(sorted_subjects, sorted_hours, color=colors2)
+    ax2.set_title("After Sorting (Descending Order)", fontsize=14, fontweight='bold')
+    ax2.set_xlabel("Subjects")
+    ax2.set_ylabel("Weekly Study Hours")
+    ax2.tick_params(axis='x', rotation=45)
+    ax2.set_ylim(0, max(sorted_hours) + 2)
+    
+ 
+    for bar in bars2:
+        height = bar.get_height()
+        ax2.text(bar.get_x() + bar.get_width()/2., height + 0.1,
+                f'{int(height)}h', ha='center', va='bottom')
+    
+    plt.suptitle("Weekly Study Hours: Before and After Sorting", fontsize=16, fontweight='bold')
+    plt.tight_layout()
+    plt.show()
+
+
+def main():
+
+    subjects = ["Math", "Science", "History", "English", "Art", "Physics"]
+    hours = [8, 12, 5, 10, 3, 15]
+    
+    print("=" * 60)
+    print("STUDY HOURS ORGANIZER")
+    print("=" * 60)
+    print("\nOriginal Study Schedule:")
+    for subject, hour in zip(subjects, hours):
+        print(f"  {subject}: {hour} hours per week")
+    
+    sorted_subjects, sorted_hours, steps = bubble_sort(subjects, hours)
+    
+    print("\n" + "=" * 60)
+    print("Sorted Study Schedule (Most to Least Hours):")
+    for i, (subject, hour) in enumerate(zip(sorted_subjects, sorted_hours)):
+        print(f"  {i+1}. {subject}: {hour} hours per week")
+    
+    print("\n" + "=" * 60)
+    print("Analysis:")
+    print(f"  Total study hours per week: {sum(hours)} hours")
+    print(f"  Subject with most hours: {sorted_subjects[0]} ({sorted_hours[0]} hours)")
+    print(f"  Subject with least hours: {sorted_subjects[-1]} ({sorted_hours[-1]} hours)")
+    print("=" * 60)
+    
+
+    print("\nGenerating visualizations...\n")
+    
+ 
+    visualize_comparison(subjects, hours, sorted_subjects, sorted_hours)
+    
+  
+    visualize_sorting(steps)
+    
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+    
+    ax1.pie(hours, labels=subjects, autopct='%1.1f%%', startangle=90, 
+            colors=plt.cm.Set3(np.linspace(0, 1, len(subjects))))
+    ax1.set_title("Time Distribution Before Sorting", fontsize=14, fontweight='bold')
+    
+    ax2.pie(sorted_hours, labels=sorted_subjects, autopct='%1.1f%%', startangle=90,
+            colors=plt.cm.Set3(np.linspace(0, 1, len(sorted_subjects))))
+    ax2.set_title("Time Distribution After Sorting", fontsize=14, fontweight='bold')
+    
+    plt.suptitle("Weekly Study Time Distribution", fontsize=16, fontweight='bold')
+    plt.tight_layout()
+    plt.show()
+
+
+if __name__ == "__main__":
+    main()
